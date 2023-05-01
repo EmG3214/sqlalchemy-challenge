@@ -1,6 +1,8 @@
 # Import the dependencies.
 import numpy as np
 import datetime as dt
+import pandas as pd
+
 import os
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
@@ -46,7 +48,9 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/YOUR DATE HERE <br/>"
+        f"/api/v1.0/yyyy-m-d <br/>"
+        f"/api/v1.0/yyyy-m-d/yyyy-m-d"
+
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -70,7 +74,7 @@ def precipitation():
 
 
 @app.route("/api/v1.0/stations")
-def stations():
+def station():
         """Return a list of all active stations"""
 
 
@@ -87,18 +91,64 @@ def temperature():
         """Return the dates and temperature observations of the most-active station for the previous year of data."""
 
         # Query all preciptation
-        active_station_temps = session.query(measurement.date, measurement.tobs).filter(measurement.station == "USC00519281").\
-            filter(measurement.date >= dt.date(2016,8,23)).all()
+        active_station_temps = session.query(measurement.date, measurement.tobs).filter(measurement.station == "USC00519281").filter(measurement.date >= dt.date(2016,8,23)).all()
 
         # Convert list of tuples into a callable dictionary
         all_acive_data = []
-        for date, temp in active_station_temps:
+        for sdate, stemp in active_station_temps:
               active_temp_dict = {}
-              active_temp_dict["Date"] = date
-              active_temp_dict["Temperature"] = temp
+              active_temp_dict["Date"] = sdate
+              active_temp_dict["Temperature"] = stemp
               all_acive_data.append(active_temp_dict)
 
         return jsonify(all_acive_data)
+
+
+@app.route("/api/v1.0/<start>")
+def temp_data(start):
+    """Fetch the min, avg, and max temp whose date matches
+       the path variable supplied by the user."""
+    
+    start_date =  dt.datetime.strptime(start,"%Y-%m-%d")
+    
+        #Fetch each date's min, max, and average
+    temp_measures = session.query(measurement.date, func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+        filter(measurement.date >= start_date).all()
+
+    temp_measures_data = []
+    for Tdate, TMIN, TMAX, TAVG in temp_measures:
+          temp_measures_dict = {}
+          temp_measures_dict["Date"] = Tdate
+          temp_measures_dict["Min_Temp"] = TMIN
+          temp_measures_dict["Max_Temp"] = TMAX
+          temp_measures_dict["Avg_Temp"] = TAVG
+          temp_measures_data.append(temp_measures_dict)
+    
+    return jsonify(temp_measures_data)
+
+
+@app.route("/api/v1.0/<strt>/<end>")
+def temp_between(strt,end):
+    """Fetch the min, avg, and max temp whose dates match
+       the path variables supplied by the user."""
+    
+    s_date =  dt.datetime.strptime(strt,"%Y-%m-%d")
+    e_date =  dt.datetime.strptime(end,"%Y-%m-%d")
+    
+        #Fetch each date's min, max, and average
+    temp_btwn = session.query(measurement.date, func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+        filter((measurement.date >= s_date)| (measurement.date <= e_date)).all()
+
+    temp_btwn_data = []
+    for Bdate, BMIN, BMAX, BAVG in temp_btwn:
+          temp_btwn_dict = {}
+          temp_btwn_dict["Date"] = Bdate
+          temp_btwn_dict["Min_Temp"] = BMIN
+          temp_btwn_dict["Max_Temp"] = BMAX
+          temp_btwn_dict["Avg_Temp"] = BAVG
+          temp_btwn_data.append(temp_btwn_dict)
+    
+    return jsonify(temp_btwn_data)
 
 
 #End Session
