@@ -112,7 +112,7 @@ def temp_data(start):
     start_date =  dt.datetime.strptime(start,"%Y-%m-%d")
     
         #Fetch each date's min, max, and average
-    temp_measures = session.query(measurement.date, func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+    temp_measures = session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
         filter(measurement.date >= start_date).all()
 
     temp_measures_data = []
@@ -136,7 +136,7 @@ def temp_between(strt,end):
     e_date =  dt.datetime.strptime(end,"%Y-%m-%d")
     
         #Fetch each date's min, max, and average
-    temp_btwn = session.query(measurement.date, func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+    temp_btwn = session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
         filter((measurement.date >= s_date)| (measurement.date <= e_date)).all()
 
     temp_btwn_data = []
